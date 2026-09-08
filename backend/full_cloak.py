@@ -9,6 +9,7 @@ from torchvision import transforms
 # SETTINGS
 # ============================================================
 
+# Makes the random initialization reproducible
 torch.manual_seed(42)
 
 # Face detector
@@ -24,64 +25,93 @@ model = InceptionResnetV1(
 
 
 # ============================================================
-# HELPERS
+# QUALITY ENHANCEMENT
 # ============================================================
 
-def total_variation(x):
+def enhance_cloaked_face(face_img):
     """
-    Measures high-frequency variation in the perturbation.
-    Higher TV = more noisy / visible perturbation.
+    Very mild post-processing to reduce visible
+    high-frequency artifacts while retaining detail.
+
+    This is intentionally subtle because aggressive
+    enhancement can weaken the cloaking effect.
     """
-    tv_h = torch.mean(torch.abs(x[:, :, 1:, :] - x[:, :, :-1, :]))
-    tv_w = torch.mean(torch.abs(x[:, :, :, 1:] - x[:, :, :, :-1]))
 
-    return tv_h + tv_w
+    # Very light smoothing
+    smoothed = face_img.filter(
+        ImageFilter.GaussianBlur(radius=0.30)
+    )
 
+    # Recover a small amount of perceived sharpness
+    enhanced = smoothed.filter(
+        ImageFilter.UnsharpMask(
+            radius=0.75,
+            percent=30,
+            threshold=4
+        )
+    )
+
+    return enhanced
+
+
+# ============================================================
+# SOFT FACE MASK
+# ============================================================
 
 def create_soft_mask(width, height):
     """
-    Creates a soft elliptical mask so the perturbation
-    fades naturally toward the edges of the face.
+    Creates a soft elliptical mask so the cloaked face
+    blends naturally into the surrounding image.
     """
-
-    mask = Image.new("L", (width, height), 0)
-
-    # Large central ellipse
-    ellipse = Image.new("L", (width, height), 0)
-
-    # Leave a small margin around the face crop
-    left = int(width * 0.08)
-    top = int(height * 0.06)
-    right = int(width * 0.92)
-    bottom = int(height * 0.96)
 
     from PIL import ImageDraw
 
-    draw = ImageDraw.Draw(ellipse)
+    mask = Image.new(
+        "L",
+        (width, height),
+        0
+    )
+
+    draw = ImageDraw.Draw(mask)
+
+    left = int(width * 0.07)
+    top = int(height * 0.05)
+    right = int(width * 0.93)
+    bottom = int(height * 0.97)
 
     draw.ellipse(
         (left, top, right, bottom),
         fill=255
     )
 
-    # Blur the mask so the transition is gradual
-    blur_radius = max(5, int(min(width, height) * 0.06))
-
-    ellipse = ellipse.filter(
-        ImageFilter.GaussianBlur(blur_radius)
+    # Soft transition at edges
+    blur_radius = max(
+        4,
+        int(min(width, height) * 0.05)
     )
 
-    return ellipse
+    mask = mask.filter(
+        ImageFilter.GaussianBlur(
+            blur_radius
+        )
+    )
+
+    # Slightly reduce blending strength
+    mask = mask.point(
+        lambda p: int(p * 0.72)
+    )
+
+    return mask
 
 
 # ============================================================
-# MAIN CLOAK FUNCTION
+# FACE CLOAK
 # ============================================================
 
 def cloak_face(full_img):
     """
     Takes a full PIL image and returns the full image
-    with a subtle adversarial face perturbation.
+    with the detected face cloaked.
 
     Returns None if no face is detected.
     """
@@ -95,14 +125,14 @@ def cloak_face(full_img):
     if boxes is None:
         return None
 
-    # Use first detected face
+    # Use the first detected face
     box = boxes[0]
 
     x1, y1, x2, y2 = [
         int(b) for b in box
     ]
 
-    # Keep coordinates inside image
+    # Make sure coordinates stay inside image
     x1 = max(0, x1)
     y1 = max(0, y1)
     x2 = min(full_img.width, x2)
@@ -121,27 +151,31 @@ def cloak_face(full_img):
 
     original_size = face_crop.size
 
-    # FaceNet expects 160 x 160
+    # FaceNet input size
     face_resized = face_crop.resize(
         (160, 160),
         Image.Resampling.LANCZOS
     )
 
     # --------------------------------------------------------
-    # 3. Convert to tensor
+    # 3. Convert face to tensor
     # --------------------------------------------------------
 
     to_tensor = transforms.ToTensor()
 
-    face_tensor = to_tensor(face_resized)
+    face_tensor = to_tensor(
+        face_resized
+    )
 
-    # Normalize to [-1, 1]
-    face_tensor = (face_tensor - 0.5) / 0.5
+    # Normalize [0,1] → [-1,1]
+    face_tensor = (
+        face_tensor - 0.5
+    ) / 0.5
 
     face_tensor = face_tensor.unsqueeze(0)
 
     # --------------------------------------------------------
-    # 4. Get original face embedding
+    # 4. Original face embedding
     # --------------------------------------------------------
 
     with torch.no_grad():
@@ -157,45 +191,52 @@ def cloak_face(full_img):
         )
 
     # --------------------------------------------------------
-    # 5. Initialize VERY small perturbation
+    # 5. Start with very small random perturbation
     # --------------------------------------------------------
 
     perturbation = (
-        torch.randn_like(face_tensor) * 0.002
+        torch.randn_like(face_tensor)
+        * 0.002
     )
 
     perturbation.requires_grad_(True)
 
     # --------------------------------------------------------
-    # 6. Conservative attack parameters
+    # 6. Conservative cloaking parameters
     # --------------------------------------------------------
 
+    # Maximum pixel perturbation
     epsilon = 0.012
 
+    # Number of optimization iterations
     steps = 60
 
+    # Size of each update
     alpha = 0.0005
 
-    # Penalties controlling visual quality
+    # Quality-preserving penalties
     pixel_weight = 0.015
     smooth_weight = 0.025
 
     # --------------------------------------------------------
-    # 7. Iterative optimization
+    # 7. Optimize the face embedding
     # --------------------------------------------------------
 
     for step in range(steps):
 
-        # Create adversarial face
-        adv_face = face_tensor + perturbation
+        # Create current adversarial face
+        adv_face = (
+            face_tensor + perturbation
+        )
 
+        # Keep image values valid
         adv_face = torch.clamp(
             adv_face,
             -1.0,
             1.0
         )
 
-        # Get current embedding
+        # Current embedding
         current_embedding = model(
             adv_face
         )
@@ -216,11 +257,11 @@ def cloak_face(full_img):
             dim=1
         ).mean()
 
-        # We want this value to become smaller.
+        # We want similarity to decrease
         identity_loss = cosine_similarity
 
         # ----------------------------------------------------
-        # Keep pixel changes small
+        # Penalize large pixel changes
         # ----------------------------------------------------
 
         pixel_loss = torch.mean(
@@ -228,15 +269,32 @@ def cloak_face(full_img):
         )
 
         # ----------------------------------------------------
-        # Discourage noisy / high-frequency artifacts
+        # Penalize noisy high-frequency changes
         # ----------------------------------------------------
 
-        smooth_loss = total_variation(
-            perturbation
+        tv_vertical = torch.mean(
+            torch.abs(
+                perturbation[:, :, 1:, :]
+                -
+                perturbation[:, :, :-1, :]
+            )
+        )
+
+        tv_horizontal = torch.mean(
+            torch.abs(
+                perturbation[:, :, :, 1:]
+                -
+                perturbation[:, :, :, :-1]
+            )
+        )
+
+        smooth_loss = (
+            tv_vertical
+            + tv_horizontal
         )
 
         # ----------------------------------------------------
-        # Combined objective
+        # Combined loss
         # ----------------------------------------------------
 
         loss = (
@@ -245,36 +303,42 @@ def cloak_face(full_img):
             + smooth_weight * smooth_loss
         )
 
-        # Clear old gradients
+        # Clear model gradients
         model.zero_grad()
 
         if perturbation.grad is not None:
             perturbation.grad.zero_()
 
-        # Backprop
+        # Calculate gradients
         loss.backward()
 
         # ----------------------------------------------------
-        # Gradient update
+        # Update perturbation
         # ----------------------------------------------------
 
         with torch.no_grad():
 
+            # Move in direction that reduces similarity
             perturbation -= (
-                alpha * perturbation.grad.sign()
+                alpha
+                * perturbation.grad.sign()
             )
 
-            # Keep perturbation inside epsilon budget
+            # Enforce perturbation budget
             perturbation.clamp_(
                 -epsilon,
                 epsilon
             )
 
-        perturbation = perturbation.detach()
+        # Detach before next iteration
+        perturbation = (
+            perturbation.detach()
+        )
+
         perturbation.requires_grad_(True)
 
     # --------------------------------------------------------
-    # 8. Create final adversarial face
+    # 8. Construct final cloaked face
     # --------------------------------------------------------
 
     with torch.no_grad():
@@ -290,7 +354,7 @@ def cloak_face(full_img):
         )
 
     # --------------------------------------------------------
-    # 9. Convert back to PIL
+    # 9. Convert tensor back to PIL
     # --------------------------------------------------------
 
     final_face_tensor = (
@@ -300,20 +364,35 @@ def cloak_face(full_img):
     )
 
     cloaked_face_img = transforms.ToPILImage()(
-        (final_face_tensor * 0.5 + 0.5).clamp(0, 1)
+        (
+            final_face_tensor * 0.5
+            + 0.5
+        ).clamp(0, 1)
     )
 
     # --------------------------------------------------------
     # 10. Resize to original face dimensions
     # --------------------------------------------------------
 
-    cloaked_face_resized = cloaked_face_img.resize(
-        original_size,
-        Image.Resampling.LANCZOS
+    cloaked_face_resized = (
+        cloaked_face_img.resize(
+            original_size,
+            Image.Resampling.LANCZOS
+        )
     )
 
     # --------------------------------------------------------
-    # 11. Softly blend perturbation into original face
+    # 11. Mild quality enhancement
+    # --------------------------------------------------------
+
+    cloaked_face_resized = (
+        enhance_cloaked_face(
+            cloaked_face_resized
+        )
+    )
+
+    # --------------------------------------------------------
+    # 12. Create soft blending mask
     # --------------------------------------------------------
 
     mask = create_soft_mask(
@@ -321,11 +400,9 @@ def cloak_face(full_img):
         original_size[1]
     )
 
-    # Slightly reduce overall strength of the modification
-    # to preserve visual quality.
-    mask = mask.point(
-        lambda p: int(p * 0.72)
-    )
+    # --------------------------------------------------------
+    # 13. Paste cloaked face into original image
+    # --------------------------------------------------------
 
     final_full_img = full_img.copy()
 
@@ -339,7 +416,7 @@ def cloak_face(full_img):
 
 
 # ============================================================
-# TEST
+# STANDALONE TEST
 # ============================================================
 
 if __name__ == '__main__':
@@ -348,20 +425,32 @@ if __name__ == '__main__':
         r'E:\Swasthi\books\face-cloak-project\test_photo.png'
     )
 
-    output_path = 'cloaked_full_photo.jpg'
+    output_path = (
+        'cloaked_full_photo.jpg'
+    )
 
+    # Load original
     full_img = Image.open(
         input_path
     ).convert('RGB')
 
-    result = cloak_face(full_img)
+    print("Detecting face and generating cloak...")
 
+    # Cloak
+    result = cloak_face(
+        full_img
+    )
+
+    # Check result
     if result is None:
 
-        print("No face detected.")
+        print(
+            "No face detected."
+        )
 
     else:
 
+        # Save at high JPEG quality
         result.save(
             output_path,
             format='JPEG',
