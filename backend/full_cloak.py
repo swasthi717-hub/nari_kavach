@@ -3,6 +3,7 @@ from facenet_pytorch import MTCNN, InceptionResnetV1
 from PIL import Image
 from torchvision import transforms
 
+torch.manual_seed(42) 
 mtcnn = MTCNN(image_size=160, margin=0)
 model = InceptionResnetV1(pretrained='vggface2').eval()
 
@@ -34,7 +35,7 @@ def cloak_face(full_img):
     adv_face = adv_face + noise
     adv_face.requires_grad = True
 
-    epsilon = 0.05
+    epsilon = 0.03
     steps = 100
     optimizer = torch.optim.Adam([adv_face], lr=0.01)
 
@@ -62,7 +63,7 @@ def cloak_face(full_img):
 
 
 if __name__ == '__main__':
-    full_img = Image.open('test_photo.jpg').convert('RGB')
+    full_img = Image.open(r'E:\Swasthi\books\face-cloak-project\test_photo.png').convert('RGB')
     result = cloak_face(full_img)
     result.save('cloaked_full_photo.jpg')
     print("Saved cloaked_full_photo.jpg")
