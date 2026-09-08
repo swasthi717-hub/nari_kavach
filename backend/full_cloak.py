@@ -35,7 +35,7 @@ def cloak_face(full_img):
     adv_face = adv_face + noise
     adv_face.requires_grad = True
 
-    epsilon = 0.03
+    epsilon = 0.025
     steps = 100
     optimizer = torch.optim.Adam([adv_face], lr=0.01)
 
