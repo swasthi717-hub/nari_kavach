@@ -236,28 +236,61 @@
 <div class="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center font-label-md text-label-md font-bold shadow-sm border border-surface-container-lowest z-10">2</div>
 <h3 class="font-headline-md text-headline-md text-on-surface mb-sm flex items-center gap-2">
 <span class="material-symbols-outlined text-secondary">visibility_off</span>
-                    Review
-                </h3>
-<p class="font-body-md text-body-md text-on-surface-variant mb-md flex-grow">Review auto-detected sensitive areas and adjust blurs.</p>
-<div class="relative w-full aspect-square bg-surface-container-low rounded-lg border border-outline-variant/50 overflow-hidden">
-<img class="w-full h-full object-cover" data-alt="A lifestyle photo showing a person standing near a parked car and holding a smartphone. The scene is brightly lit with a soft-modern, calming aesthetic. Specific areas like the phone screen and the car's license plate are visible, serving as examples of sensitive information that would be blurred by the privacy software." src="https://i.pinimg.com/1200x/bd/29/3a/bd293a30edde6b3f9f963604fb363d90.jpg">
-<!-- Highlighted Region 1 (e.g., License Plate) -->
-<div class="absolute bottom-1/4 right-1/4 w-24 h-8 bg-surface-container-lowest/40 backdrop-blur-md border-2 border-primary border-dashed rounded flex items-center justify-center group cursor-pointer hover:bg-primary-container/60 transition-colors">
-<span class="material-symbols-outlined text-primary text-xs opacity-0 group-hover:opacity-100">edit</span>
+Review
+</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md flex-grow">Review auto-detected sensitive areas and choose what to blur.</p>
+
+<div id="privacyPreviewContainer"
+     class="relative w-full aspect-square rounded-lg border border-outline-variant/50 overflow-hidden bg-cover bg-center"
+     style="background-image: url('https://i.pinimg.com/1200x/b3/ac/8b/b3ac8b60d7418c27b2fd22d8d8337f33.jpg');">
+     <!-- Transparent/faded overlay -->
+    <div class="absolute inset-0 bg-white/60 z-0"></div>
+
+<div id="privacyEmptyState" class="absolute inset-0 flex flex-col items-center justify-center p-md text-center">
+<div class="w-14 h-14 bg-secondary-container rounded-full flex items-center justify-center mb-sm">
+<span class="material-symbols-outlined text-2xl text-secondary">document_scanner</span>
 </div>
-<!-- Highlighted Region 2 (e.g., Face/ID) -->
-<div class="absolute top-1/4 left-1/3 w-16 h-20 bg-surface-container-lowest/40 backdrop-blur-md border-2 border-primary border-dashed rounded-full flex items-center justify-center group cursor-pointer hover:bg-primary-container/60 transition-colors">
-<span class="material-symbols-outlined text-primary text-xs opacity-0 group-hover:opacity-100">edit</span>
+<h4 class="font-label-md text-label-md text-on-surface mb-1">Privacy Mirror</h4>
+<p class="font-caption text-caption text-on-surface-variant">Upload a photo to scan for exposed personal information.</p>
 </div>
-<!-- Blur Toggle Overlay Control -->
-<div class="absolute bottom-2 left-2 right-2 bg-surface-container-lowest/90 backdrop-blur-sm p-2 rounded-lg flex items-center justify-between shadow-sm border border-outline-variant/20">
-<span class="font-caption text-caption text-on-surface">Auto-Blur PII</span>
-<div class="w-10 h-6 bg-primary rounded-full relative cursor-pointer flex items-center px-1">
-<div class="w-4 h-4 bg-on-primary rounded-full absolute right-1 shadow-sm"></div>
+
+<img id="privacyPreviewImg" class="hidden absolute inset-0 w-full h-full object-contain" src="" alt="Privacy Mirror preview">
+<div id="privacyBoxes" class="absolute inset-0 pointer-events-none"></div>
+
+<div id="privacyScanningState" class="hidden absolute inset-0 z-30 flex flex-col items-center justify-center bg-surface-container-lowest/90 backdrop-blur-sm">
+<span class="material-symbols-outlined text-4xl text-secondary mb-2 animate-spin">progress_activity</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Scanning for sensitive information...</span>
 </div>
+
+<div id="privacyNoDetectionState" class="hidden absolute inset-0 z-20 flex flex-col items-center justify-center bg-surface-container-lowest/85 backdrop-blur-sm p-md text-center">
+<span class="material-symbols-outlined text-4xl text-tertiary mb-2">verified_user</span>
+<h4 class="font-label-md text-label-md text-on-surface mb-1">No sensitive information found</h4>
+<p class="font-caption text-caption text-on-surface-variant">Privacy Mirror did not detect PII that matches its current scan patterns.</p>
 </div>
+
+<div id="privacyCountBadge" class="hidden absolute top-2 left-2 z-20 bg-primary text-on-primary px-3 py-1.5 rounded-full font-caption text-caption shadow-sm">0 items detected</div>
 </div>
-<p class="font-caption text-caption text-on-surface-variant mt-2 text-center">Privacy Mirror (PII scan) coming soon \u2014 currently showing a sample preview.</p>
+
+<div id="privacyDetectionPanel" class="hidden mt-3">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-md text-label-md text-on-surface">Sensitive information found</span>
+<button type="button" onclick="selectAllDetections()" class="text-xs font-semibold text-primary hover:underline">Select all</button>
+</div>
+
+<div id="privacyDetectionList" class="max-h-28 overflow-y-auto space-y-1 pr-1"></div>
+
+<button id="applyPrivacyBtn" type="button" onclick="applyPrivacyProtection()" class="mt-3 bg-secondary text-on-secondary font-label-md text-label-md px-4 py-3 rounded-lg hover:opacity-90 transition-opacity active:scale-95 shadow-sm min-h-[48px] w-full flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">blur_on</span>
+Apply Selected Blurs
+</button>
+</div>
+
+<div id="privacyReadyMessage" class="hidden mt-2 text-center font-caption text-caption text-tertiary">
+<span class="material-symbols-outlined align-middle text-sm">check_circle</span>
+Privacy protection applied.
+</div>
+
+<p id="privacyStatus" class="font-caption text-caption text-on-surface-variant mt-2 text-center">Privacy Mirror will scan your uploaded photo before anything is blurred.</p>
 </div>
 <!-- Box 3: Secured Confirmation -->
 <div class="bg-surface-container-lowest rounded-xl p-md shadow-sm border border-outline-variant/30 flex flex-col h-full relative">
@@ -350,60 +383,683 @@
     </div>
 </div></footer>
 
-<script>
-// ---- Real backend connection logic ----
-// Change this if your Flask server runs on a different address/port
-const CLOAK_API_URL = 'http://127.0.0.1:5000/cloak';
+        <div
+                id="usage-limit-modal"
+                class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="usage-limit-title">
+                <div class="w-full max-w-md rounded-2xl border border-[#D9A5B5]/30 bg-[#fef8f3] p-8 text-center text-[#2A2130] shadow-2xl">
+                        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#874d5f]/15 text-[#874d5f]">
+                                <span class="material-symbols-outlined text-2xl">hourglass_top</span>
+                        </div>
+                        <h3 id="usage-limit-title" class="mb-3 text-2xl font-semibold tracking-tight">You've Used Your Free Protections</h3>
+                        <p class="mb-4 text-sm leading-relaxed text-on-surface-variant">You get 3 free photo protections every 48 hours. You've used all 3 for this window.</p>
+                        <p class="mb-6 text-sm font-medium text-[#8A5A78]">Want unlimited protections and batch processing? Upgrade for ₹99/month.</p>
+                        <a href="checkout.html"
+   class="mb-3 block w-full rounded-full bg-[#7A4B63] px-5 py-3 text-center font-medium text-white shadow transition-all hover:bg-[#8A5A78]">
+    Upgrade Now at ₹99/month
+</a>
+                        <button type="button" onclick="closeUsageLimitModal()" class="w-full rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium text-on-surface transition-all hover:bg-gray-100">Maybe Later</button>
+                </div>
+        </div>
+
+        <script>
+                const MAX_FREE_USAGES = 3;
+
+                function getModelUsageCount() {
+                        return Number.parseInt(localStorage.getItem('veilai_usage_count') || '0', 10);
+                }
+
+                function canUseModel() {
+                        return getModelUsageCount() < MAX_FREE_USAGES;
+                }
+
+                function recordModelUsage() {
+                        localStorage.setItem('veilai_usage_count', String(getModelUsageCount() + 1));
+                }
+
+                function showUsageLimitModal() {
+                        document.getElementById('usage-limit-modal')?.classList.replace('hidden', 'flex');
+                }
+
+                function closeUsageLimitModal() {
+                        document.getElementById('usage-limit-modal')?.classList.replace('flex', 'hidden');
+                }
+
+                function resetModelUsage() {
+                        localStorage.removeItem('veilai_usage_count');
+                        closeUsageLimitModal();
+                }
+        </script>
+
+        <script>
+// =========================================================
+// VeilAI - Backend connection
+// =========================================================
+
+const API_BASE_URL = 'http://127.0.0.1:5000';
+const CLOAK_API_URL = `${API_BASE_URL}/cloak`;
+const PRIVACY_SCAN_API_URL = `${API_BASE_URL}/privacy-scan`;
+const PRIVACY_BLUR_API_URL = `${API_BASE_URL}/privacy-blur`;
+
+let originalPhotoFile = null;
+let originalPhotoUrl = null;
+let privacyDetections = [];
+let cloakedImageUrl = null;
+let blurredImageUrl = null;
+
+// =========================================================
+// Upload -> Privacy Scan + Face Cloak
+// =========================================================
 
 async function handlePhotoUpload() {
   const fileInput = document.getElementById('photoInput');
   const file = fileInput.files[0];
+
   if (!file) return;
 
-  // Show processing state in Box 1
+  if (!canUseModel()) {
+    showUsageLimitModal();
+    fileInput.value = '';
+    return;
+  }
+
+  originalPhotoFile = file;
+
+  if (originalPhotoUrl) URL.revokeObjectURL(originalPhotoUrl);
+  if (cloakedImageUrl) URL.revokeObjectURL(cloakedImageUrl);
+  if (blurredImageUrl) URL.revokeObjectURL(blurredImageUrl);
+
+  originalPhotoUrl = URL.createObjectURL(file);
+  cloakedImageUrl = null;
+  blurredImageUrl = null;
+  privacyDetections = [];
+
+  resetPrivacyMirrorUI();
+
+  // Step 1 processing state.
   document.getElementById('uploadDefaultState').classList.add('hidden');
   document.getElementById('uploadDoneState').classList.add('hidden');
   document.getElementById('uploadProcessingState').classList.remove('hidden');
 
-  const formData = new FormData();
-  formData.append('photo', file);
+  const processingText =
+    document.querySelector('#uploadProcessingState span:last-child');
 
-  try {
-    const response = await fetch(CLOAK_API_URL, {
-      method: 'POST',
-      body: formData
-    });
+  if (processingText) {
+    processingText.textContent = 'Checking your photo...';
+  }
 
-    if (!response.ok) {
-      alert('No face detected, or something went wrong. Please try a different photo.');
-      resetFlow();
-      return;
+  // Show the original photo in Privacy Mirror immediately.
+  const privacyImg = document.getElementById('privacyPreviewImg');
+  privacyImg.src = originalPhotoUrl;
+  privacyImg.classList.remove('hidden');
+  document.getElementById('privacyEmptyState').classList.add('hidden');
+
+  // Run Privacy Mirror and Face Cloak independently.
+  // A missing face must NOT stop the Privacy Mirror flow.
+  const scanPromise = scanPrivacy(file);
+  const cloakPromise = cloakPhoto(file);
+
+  const [scanResult, cloakResult] = await Promise.allSettled([
+    scanPromise,
+    cloakPromise
+  ]);
+
+  // =========================================================
+  // PRIVACY MIRROR RESULT
+  // =========================================================
+
+  if (scanResult.status === 'fulfilled') {
+    privacyDetections = scanResult.value || [];
+    renderPrivacyDetections();
+  } else {
+    console.error('Privacy scan failed:', scanResult.reason);
+    showPrivacyError('Privacy Mirror could not complete its scan.');
+  }
+
+  // =========================================================
+  // FACE CLOAK RESULT
+  // =========================================================
+
+  if (cloakResult.status === 'fulfilled') {
+
+    // Face detected and successfully cloaked.
+    cloakedImageUrl = cloakResult.value;
+    showCloakedPreview(cloakedImageUrl);
+
+  } else {
+
+    const cloakError = cloakResult.reason;
+    const errorMessage = String(cloakError?.message || cloakError || '');
+
+    console.warn('Face Cloak unavailable:', cloakError);
+
+    // IMPORTANT:
+    // Do NOT reset the entire flow when no face is detected.
+    // Privacy Mirror must continue independently.
+
+    const noFaceDetected =
+      errorMessage.toLowerCase().includes('no face');
+
+    if (!noFaceDetected) {
+      // A real server/processing error is different from "no face".
+      alert(
+        'Face cloaking could not be completed. Privacy Mirror can still be used if its scan succeeded.'
+      );
     }
 
-    const imageBlob = await response.blob();
-    const imageUrl = URL.createObjectURL(imageBlob);
-
-    // Update Box 1: show the uploaded preview with "Cloak Applied" badge
     document.getElementById('uploadProcessingState').classList.add('hidden');
-    document.getElementById('uploadPreviewImg').src = imageUrl;
+
+    // Show the original image in Step 1.
+    document.getElementById('uploadPreviewImg').src = originalPhotoUrl;
     document.getElementById('uploadDoneState').classList.remove('hidden');
 
-    // Update Box 3: show the real cloaked result + working download link
+    // Change Step 1 badge to make it clear that no face was found.
+    const badgeText =
+      document.querySelector('#uploadDoneState span:last-child');
+
+    if (badgeText) {
+      badgeText.textContent = noFaceDetected
+        ? 'No Face Detected'
+        : 'Face Cloak Unavailable';
+    }
+
+    const badgeIcon =
+      document.querySelector('#uploadDoneState span:first-child');
+
+    if (badgeIcon) {
+      badgeIcon.textContent = noFaceDetected ? 'info' : 'warning';
+      badgeIcon.classList.remove('filled');
+    }
+
+    // Put the original image into Step 3 as a temporary result.
+    // Privacy Mirror can still produce the final protected result later.
     document.getElementById('secureDefaultState').classList.add('hidden');
     document.getElementById('secureResultState').classList.remove('hidden');
     document.getElementById('secureResultState').classList.add('flex');
-    document.getElementById('cloakedResultImg').src = imageUrl;
-    document.getElementById('downloadBtn').href = imageUrl;
+
+    document.getElementById('cloakedResultImg').src = originalPhotoUrl;
+    document.getElementById('downloadBtn').href = originalPhotoUrl;
+    document.getElementById('downloadBtn').download =
+      'veilai_privacy_protected.jpg';
+
+    const secureDescription =
+      document.querySelector('#secureResultState p');
+
+    if (secureDescription) {
+      secureDescription.textContent = noFaceDetected
+        ? 'No face detected. Review Privacy Mirror to protect sensitive information.'
+        : 'Face Cloak unavailable. Review Privacy Mirror to protect sensitive information.';
+    }
+
+    // Count this as one protection because the photo processing flow
+    // has successfully reached the user-review stage.
+    if (scanResult.status === 'fulfilled') {
+      recordModelUsage();
+    }
+  }
+}
+
+// =========================================================
+// Face Cloak
+// =========================================================
+
+async function cloakPhoto(file) {
+  const formData = new FormData();
+  formData.append('photo', file);
+
+  const response = await fetch(CLOAK_API_URL, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    let message = 'Face cloaking failed.';
+
+    try {
+      const data = await response.json();
+      if (data.error) message = data.error;
+    } catch (_) {}
+
+    throw new Error(message);
+  }
+
+  const imageBlob = await response.blob();
+  return URL.createObjectURL(imageBlob);
+}
+
+function showCloakedPreview(imageUrl) {
+  document.getElementById('uploadProcessingState').classList.add('hidden');
+
+  document.getElementById('uploadPreviewImg').src = imageUrl;
+  document.getElementById('uploadDoneState').classList.remove('hidden');
+
+  document.getElementById('secureDefaultState').classList.add('hidden');
+  document.getElementById('secureResultState').classList.remove('hidden');
+  document.getElementById('secureResultState').classList.add('flex');
+
+  document.getElementById('cloakedResultImg').src = imageUrl;
+  document.getElementById('downloadBtn').href = imageUrl;
+  document.getElementById('downloadBtn').download = 'veilai_cloaked_photo.jpg';
+
+  // Count one user protection, not each backend request.
+  recordModelUsage();
+}
+
+// =========================================================
+// Privacy Mirror - Scan
+// =========================================================
+
+async function scanPrivacy(file) {
+  const formData = new FormData();
+  formData.append('photo', file);
+
+  document.getElementById('privacyScanningState').classList.remove('hidden');
+  document.getElementById('privacyStatus').textContent =
+    'Privacy Mirror is scanning the photo for exposed personal information...';
+
+  const response = await fetch(PRIVACY_SCAN_API_URL, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    let message = 'Privacy scan failed.';
+
+    try {
+      const data = await response.json();
+      if (data.error) message = data.error;
+    } catch (_) {}
+
+    throw new Error(message);
+  }
+
+  const data = await response.json();
+
+  if (!data.success) {
+    throw new Error(data.error || 'Privacy scan failed.');
+  }
+
+  return data.detections || [];
+}
+
+// =========================================================
+// Render Privacy Mirror detections
+// =========================================================
+
+function renderPrivacyDetections() {
+  const scanning = document.getElementById('privacyScanningState');
+  const noDetection = document.getElementById('privacyNoDetectionState');
+  const panel = document.getElementById('privacyDetectionPanel');
+  const list = document.getElementById('privacyDetectionList');
+  const boxes = document.getElementById('privacyBoxes');
+  const countBadge = document.getElementById('privacyCountBadge');
+  const status = document.getElementById('privacyStatus');
+
+  scanning.classList.add('hidden');
+  boxes.innerHTML = '';
+  list.innerHTML = '';
+
+  if (!privacyDetections.length) {
+    panel.classList.add('hidden');
+    countBadge.classList.add('hidden');
+    noDetection.classList.remove('hidden');
+
+    status.textContent =
+      'No matching PII was detected. You can still share the cloaked photo.';
+    return;
+  }
+
+  noDetection.classList.add('hidden');
+  panel.classList.remove('hidden');
+  countBadge.classList.remove('hidden');
+
+  countBadge.textContent =
+    `${privacyDetections.length} item${privacyDetections.length === 1 ? '' : 's'} detected`;
+
+  status.textContent =
+    'Review the detected areas below. Nothing is blurred until you choose to apply it.';
+
+  const img = document.getElementById('privacyPreviewImg');
+
+  const drawBoxes = () => {
+    boxes.innerHTML = '';
+
+    const width = img.naturalWidth;
+    const height = img.naturalHeight;
+
+    if (!width || !height) return;
+
+    privacyDetections.forEach((item, index) => {
+      const [left, top, right, bottom] = item.bbox || [0, 0, 0, 0];
+
+      const box = document.createElement('div');
+      box.id = `privacy-box-${index}`;
+      box.className =
+        'absolute border-2 border-primary border-dashed bg-primary/10 rounded pointer-events-none';
+
+      box.style.left = `${(left / width) * 100}%`;
+      box.style.top = `${(top / height) * 100}%`;
+      box.style.width = `${Math.max(0, ((right - left) / width) * 100)}%`;
+      box.style.height = `${Math.max(0, ((bottom - top) / height) * 100)}%`;
+
+      const label = document.createElement('span');
+      label.className =
+        'absolute -top-6 left-0 bg-primary text-on-primary px-1.5 py-0.5 rounded text-[9px] font-bold whitespace-nowrap';
+      label.textContent = item.category || 'Sensitive';
+
+      box.appendChild(label);
+      boxes.appendChild(box);
+    });
+  };
+
+  if (img.complete) {
+    drawBoxes();
+  } else {
+    img.onload = drawBoxes;
+  }
+
+  privacyDetections.forEach((item, index) => {
+    const row = document.createElement('label');
+    row.className =
+      'flex items-center gap-2 p-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = true;
+    checkbox.dataset.index = index;
+    checkbox.className =
+      'rounded border-outline text-primary focus:ring-primary';
+
+    checkbox.addEventListener('change', () => {
+      updateDetectionBox(index, checkbox.checked);
+    });
+
+    const textWrap = document.createElement('span');
+    textWrap.className = 'flex-1 min-w-0';
+
+    const category = document.createElement('span');
+    category.className =
+      'block text-xs font-semibold text-on-surface truncate';
+    category.textContent = item.category || 'Sensitive information';
+
+    const detectedText = document.createElement('span');
+    detectedText.className =
+      'block text-[10px] text-on-surface-variant truncate';
+
+    // We intentionally display the OCR text because this is a user-review
+    // screen. The user decides which detected region should be blurred.
+    detectedText.textContent =
+      `${item.text || 'Detected content'} · ${Math.round((item.confidence || 0) * 100)}% confidence`;
+
+    textWrap.appendChild(category);
+    textWrap.appendChild(detectedText);
+
+    row.appendChild(checkbox);
+    row.appendChild(textWrap);
+    list.appendChild(row);
+  });
+}
+
+function updateDetectionBox(index, selected) {
+  const box = document.getElementById(`privacy-box-${index}`);
+  if (!box) return;
+
+  if (selected) {
+    box.classList.remove('opacity-30');
+    box.classList.add('bg-primary/10');
+  } else {
+    box.classList.add('opacity-30');
+    box.classList.remove('bg-primary/10');
+  }
+}
+
+function selectAllDetections() {
+  document
+    .querySelectorAll('#privacyDetectionList input[type="checkbox"]')
+    .forEach((checkbox) => {
+      checkbox.checked = true;
+      updateDetectionBox(Number(checkbox.dataset.index), true);
+    });
+}
+
+// =========================================================
+// Privacy Mirror - Apply selected blur
+//
+// The backend first blurs the selected PII on the original photo.
+// We then send that blurred image through Face Cloak again so the
+// final downloaded image contains BOTH protections.
+// =========================================================
+
+async function applyPrivacyProtection() {
+  if (!originalPhotoFile || !privacyDetections.length) return;
+
+  const checkboxes = [
+    ...document.querySelectorAll(
+      '#privacyDetectionList input[type="checkbox"]'
+    )
+  ];
+
+  const selectedDetections = checkboxes
+    .filter((checkbox) => checkbox.checked)
+    .map((checkbox) => privacyDetections[Number(checkbox.dataset.index)]);
+
+  if (!selectedDetections.length) {
+    alert('Please select at least one sensitive area to blur.');
+    return;
+  }
+
+  const button = document.getElementById('applyPrivacyBtn');
+  const originalButtonHTML = button.innerHTML;
+
+  button.disabled = true;
+  button.classList.add('opacity-60', 'cursor-not-allowed');
+  button.innerHTML =
+    '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> Applying protection...';
+
+  document.getElementById('privacyStatus').textContent =
+    'Applying your selected privacy protections...';
+
+  try {
+    // 1. Blur selected PII.
+    const blurredBlob = await requestPrivacyBlur(
+      originalPhotoFile,
+      selectedDetections
+    );
+
+    if (blurredImageUrl) URL.revokeObjectURL(blurredImageUrl);
+    blurredImageUrl = URL.createObjectURL(blurredBlob);
+
+    // 2. Re-run Face Cloak on the blurred image.
+    // If there is no face, keep the Privacy Mirror result instead.
+    const blurredFile = new File(
+      [blurredBlob],
+      originalPhotoFile.name || 'protected_photo.jpg',
+      { type: blurredBlob.type || 'image/jpeg' }
+    );
+
+    let finalImageUrl;
+
+    try {
+      const finalCloakedUrl = await cloakPhoto(blurredFile);
+
+      if (cloakedImageUrl) URL.revokeObjectURL(cloakedImageUrl);
+
+      cloakedImageUrl = finalCloakedUrl;
+      finalImageUrl = finalCloakedUrl;
+
+    } catch (cloakError) {
+      const errorMessage =
+        String(cloakError?.message || cloakError || '');
+
+      if (errorMessage.toLowerCase().includes('no face')) {
+        console.warn(
+          'No face detected during final cloaking. Keeping Privacy Mirror result.'
+        );
+
+        finalImageUrl = blurredImageUrl;
+      } else {
+        throw cloakError;
+      }
+    }
+
+    // 3. Update final result.
+    document.getElementById('cloakedResultImg').src = finalImageUrl;
+    document.getElementById('downloadBtn').href = finalImageUrl;
+    document.getElementById('downloadBtn').download =
+      'veilai_privacy_protected.jpg';
+
+    document.getElementById('uploadPreviewImg').src = finalImageUrl;
+
+    const secureDescription =
+      document.querySelector('#secureResultState p');
+
+    if (secureDescription) {
+      secureDescription.textContent =
+        finalImageUrl === blurredImageUrl
+          ? 'Sensitive information blurred. No face was detected.'
+          : 'Face cloaked + sensitive information blurred. Ready to share.';
+    }
+
+    // 4. Mark Privacy Mirror complete.
+    document.getElementById('privacyDetectionPanel').classList.add('hidden');
+    document.getElementById('privacyCountBadge').classList.add('hidden');
+    document.getElementById('privacyBoxes').innerHTML = '';
+    document.getElementById('privacyReadyMessage').classList.remove('hidden');
+
+    document.getElementById('privacyStatus').textContent =
+      finalImageUrl === blurredImageUrl
+        ? 'Selected PII has been blurred. No face was detected, so Face Cloak was skipped.'
+        : 'Selected PII has been blurred and the final photo has been face-cloaked.';
+
+    button.innerHTML =
+      '<span class="material-symbols-outlined text-sm">verified</span> Privacy Protection Applied';
 
   } catch (err) {
-    console.error(err);
-    alert('Could not connect to the cloaking server. Make sure it is running.');
-    resetFlow();
+    console.error('Privacy protection error:', err);
+
+    alert(
+      'Could not apply the privacy protection. Make sure your Flask server is running.'
+    );
+
+    button.disabled = false;
+    button.classList.remove('opacity-60', 'cursor-not-allowed');
+    button.innerHTML = originalButtonHTML;
+
+    document.getElementById('privacyStatus').textContent =
+      'Privacy protection could not be applied. You can try again.';
+  }
+}
+
+async function requestPrivacyBlur(file, detections) {
+  const formData = new FormData();
+  formData.append('photo', file);
+  formData.append('detections', JSON.stringify(detections));
+
+  const response = await fetch(PRIVACY_BLUR_API_URL, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    let message = 'Privacy blur failed.';
+
+    try {
+      const data = await response.json();
+      if (data.error) message = data.error;
+    } catch (_) {}
+
+    throw new Error(message);
+  }
+
+  return await response.blob();
+}
+
+// =========================================================
+// Error + reset
+// =========================================================
+
+function showPrivacyError(message) {
+  document.getElementById('privacyScanningState').classList.add('hidden');
+  document.getElementById('privacyDetectionPanel').classList.add('hidden');
+  document.getElementById('privacyStatus').textContent = message;
+}
+
+function resetPrivacyMirrorUI() {
+  document.getElementById('privacyEmptyState').classList.remove('hidden');
+  document.getElementById('privacyPreviewImg').classList.add('hidden');
+  document.getElementById('privacyPreviewImg').src = '';
+  document.getElementById('privacyBoxes').innerHTML = '';
+  document.getElementById('privacyScanningState').classList.add('hidden');
+  document.getElementById('privacyNoDetectionState').classList.add('hidden');
+  document.getElementById('privacyCountBadge').classList.add('hidden');
+  document.getElementById('privacyDetectionPanel').classList.add('hidden');
+  document.getElementById('privacyReadyMessage').classList.add('hidden');
+  document.getElementById('privacyDetectionList').innerHTML = '';
+
+  const button = document.getElementById('applyPrivacyBtn');
+
+  if (button) {
+    button.disabled = false;
+    button.classList.remove('opacity-60', 'cursor-not-allowed');
+    button.innerHTML =
+      '<span class="material-symbols-outlined text-sm">blur_on</span> Apply Selected Blurs';
+  }
+
+  document.getElementById('privacyStatus').textContent =
+    'Privacy Mirror will scan your uploaded photo before anything is blurred.';
+}
+
+async function shareProtectedPhoto() {
+  const imageUrl = document.getElementById('downloadBtn').href;
+
+  if (!imageUrl) {
+    alert('Protect a photo first.');
+    return;
+  }
+
+  try {
+    if (navigator.share) {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+
+      const file = new File(
+        [blob],
+        'veilai_privacy_protected.jpg',
+        { type: blob.type || 'image/jpeg' }
+      );
+
+      await navigator.share({
+        title: 'VeilAI Protected Photo',
+        text: 'Photo protected with VeilAI.',
+        files: [file]
+      });
+    } else {
+      alert('Sharing is not supported by this browser. Use "Save Safely" instead.');
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.error('Share error:', err);
+      alert('Could not share the protected photo.');
+    }
   }
 }
 
 function resetFlow() {
-  document.getElementById('photoInput').value = '';
+  const fileInput = document.getElementById('photoInput');
+
+  if (originalPhotoUrl) URL.revokeObjectURL(originalPhotoUrl);
+  if (cloakedImageUrl) URL.revokeObjectURL(cloakedImageUrl);
+  if (blurredImageUrl) URL.revokeObjectURL(blurredImageUrl);
+
+  originalPhotoUrl = null;
+  cloakedImageUrl = null;
+  blurredImageUrl = null;
+  originalPhotoFile = null;
+  privacyDetections = [];
+
+  fileInput.value = '';
 
   document.getElementById('uploadProcessingState').classList.add('hidden');
   document.getElementById('uploadDoneState').classList.add('hidden');
@@ -412,6 +1068,8 @@ function resetFlow() {
   document.getElementById('secureResultState').classList.add('hidden');
   document.getElementById('secureResultState').classList.remove('flex');
   document.getElementById('secureDefaultState').classList.remove('hidden');
+
+  resetPrivacyMirrorUI();
 }
 </script>
 </body></html>
